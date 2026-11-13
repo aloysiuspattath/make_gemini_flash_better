@@ -73,6 +73,9 @@ Here is what each configured file does in simple, plain English:
 
 ## 📋 The Full Setup Prompt — Paste Into Antigravity
 
+> [!TIP]
+> **Prefer a single standalone prompt file?** You can view or copy the pure prompt directly from [PROMPT.md](PROMPT.md).
+
 > [!IMPORTANT]
 > **To set up any fresh Antigravity installation:**  
 > Copy everything below the line and paste it as a single prompt into an Antigravity conversation.
