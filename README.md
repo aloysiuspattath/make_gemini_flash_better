@@ -5,7 +5,13 @@
 
 ---
 
-Create the following 5 files to set up Flash model guardrails. Create each file EXACTLY as shown — do not modify, summarize, or skip any content.
+### Step 0: Install Code Intelligence Engine
+Run this command in terminal first:
+```bash
+python -m pip install --upgrade code-review-graph
+```
+
+Create the following 7 files to set up Flash model guardrails and automated Code Knowledge Graph intelligence. Create each file EXACTLY as shown — do not modify, summarize, or skip any content.
 
 ## File 1: `~/.gemini/GEMINI.md`
 
@@ -289,13 +295,22 @@ When something doesn't work:
 - When showing code, show ONLY the changed parts with enough context to
   locate the change. Do NOT reproduce entire files.
 - Save tokens for actual work, not conversation.
+
+---
+
+## Code Knowledge Graph & Context Optimization (`code-review-graph`)
+
+When working on large repositories with `code-review-graph` MCP tools enabled:
+- **Prioritize Graph Queries Over Naive Grep/Scan**: When tracing callers, callees, implementations, or blast radius, use graph tools (`query_graph_tool`, `get_impact_radius_tool`, `semantic_search_nodes_tool`) first instead of broad multi-file scans.
+- **Index New Repositories**: If the knowledge graph database is not initialized for a repository, run `code-review-graph build` in the workspace root.
+- **Verify with Source**: Use the graph for structural traversal and blast radius, then read only the targeted source files identified by the graph.
 ```
 
 ---
 
 ## File 3: `~/.gemini/config/hooks.json`
 
-Create this file at `~/.gemini/config/hooks.json`:
+Create (or merge into) this file at `~/.gemini/config/hooks.json`:
 
 ```json
 {
@@ -305,6 +320,15 @@ Create this file at `~/.gemini/config/hooks.json`:
         "type": "command",
         "command": "powershell -ExecutionPolicy Bypass -File \"~/.gemini/config/scripts/pre-invocation-reminder.ps1\"",
         "timeout": 5
+      }
+    ]
+  },
+  "code-review-graph-auto-build": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "powershell -ExecutionPolicy Bypass -File \"~/.gemini/config/scripts/auto-graph-build.ps1\"",
+        "timeout": 30
       }
     ]
   }
@@ -341,7 +365,68 @@ $response | ConvertTo-Json -Depth 10
 
 ---
 
-## File 5: `~/.gemini/config/skills/flash-guardrails/SKILL.md`
+## File 5: `~/.gemini/config/scripts/auto-graph-build.ps1`
+
+Create this file at `~/.gemini/config/scripts/auto-graph-build.ps1`:
+
+```powershell
+try {
+    $rawInput = [Console]::In.ReadToEnd()
+    if ($rawInput) {
+        $payload = $rawInput | ConvertFrom-Json
+        $workspace = $null
+        if ($payload.workspacePaths -and $payload.workspacePaths.Count -gt 0) {
+            $workspace = $payload.workspacePaths[0]
+        }
+
+        if ($workspace -and (Test-Path -LiteralPath $workspace -PathType Container)) {
+            $dbPath = Join-Path $workspace ".code-review-graph\graph.db"
+            $hasCode = Get-ChildItem -LiteralPath $workspace -Recurse -Depth 3 -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.Extension -match '\.(py|js|jsx|ts|tsx|go|rs|java|cpp|c|h|cs|dart|rb|php|kt|swift|scala|vue|svelte)$' } |
+                Select-Object -First 1
+
+            if ($hasCode) {
+                if (-not (Test-Path -LiteralPath $dbPath)) {
+                    Start-Process -FilePath "code-review-graph" -ArgumentList "build" -WorkingDirectory $workspace -WindowStyle Hidden
+                } else {
+                    Start-Process -FilePath "code-review-graph" -ArgumentList "update" -WorkingDirectory $workspace -WindowStyle Hidden
+                }
+            }
+        }
+    }
+} catch {
+    # Suppress errors to preserve session start
+}
+
+# Return valid JSON for Antigravity SessionStart hook
+"{}"
+```
+
+---
+
+## File 6: `~/.gemini/config/mcp_config.json`
+
+Create (or merge into) this file at `~/.gemini/config/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "python",
+      "args": [
+        "-m",
+        "code_review_graph",
+        "serve",
+        "--auto-watch"
+      ]
+    }
+  }
+}
+```
+
+---
+
+## File 7: `~/.gemini/config/skills/flash-guardrails/SKILL.md`
 
 Create this file at `~/.gemini/config/skills/flash-guardrails/SKILL.md`:
 
@@ -440,11 +525,7 @@ After ANY code change, run:
 
 ---
 
-After creating all 5 files, confirm each was created successfully by listing them.
+After creating all 7 files, confirm each was created successfully by listing them.
 
 > [!NOTE]
-> **For macOS/Linux**: Replace the `hooks.json` command with a bash equivalent. Change the hook command to:
-> ```json
-> "command": "bash ~/.gemini/config/scripts/pre-invocation-reminder.sh"
-> ```
-> And create a bash version of the script instead of the PowerShell one.
+> **For macOS/Linux**: Replace the PowerShell hook commands in `hooks.json` with bash equivalents pointing to `.sh` scripts (`pre-invocation-reminder.sh` and `auto-graph-build.sh`).
