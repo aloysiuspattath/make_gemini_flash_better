@@ -1,12 +1,86 @@
-# Full Prompt — Paste Into Another Antigravity
+# Make Gemini Flash Better in Google Antigravity 🚀
+### Production Guardrails, Automated AST Code Knowledge Graph & Token-Efficient Code Intelligence
+
+[![Google Antigravity](https://img.shields.io/badge/Platform-Google%20Antigravity-4285F4?logo=google&logoColor=white)](https://deepmind.google)
+[![Model](https://img.shields.io/badge/Optimized%20For-Gemini%203.8%20Flash-blueviolet?logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-green?logo=json)](https://modelcontextprotocol.io)
+[![Tree-sitter](https://img.shields.io/badge/AST%20Parser-Tree--sitter-orange)](https://tree-sitter.github.io/tree-sitter/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 📖 Overview & Purpose (SEO / SERP)
+
+**Make Gemini Flash Better** is an open-source enhancement suite and guardrail framework designed for developers building large-scale software using **Gemini 3.8 Flash** inside **Google Antigravity (AGY)**.
+
+### Why Does Gemini Flash Need This?
+**Gemini 3.8 Flash** is exceptionally fast, cost-effective, and features a massive context window (>1M tokens). However, when working on growing, multi-file codebases, lightweight/flash models face common challenges:
+1. **The "Full-Rewrite" Reflex:** Rewriting entire 800-line files to change 3 lines, frequently deleting existing functions or comments.
+2. **Attentional Degradation ("Lost in the Middle"):** Grepping through dozens of raw files introduces noise, leading to missed transitive callers and hallucinated dependencies.
+3. **Multi-Turn Grep Latency:** Burning 10+ round trips scanning files just to answer *"What breaks if I change this function?"*.
+
+### The Solution: Two-Layer Architecture
+1. **Deterministic AST Knowledge Graph (`code-review-graph`):** Runs an in-process Tree-sitter parser and indexed SQLite database. Instead of guessing who calls a function, Antigravity executes exact graph queries (`query_graph_tool`, `get_impact_radius_tool`) in single-digit milliseconds with up to **80x token reduction**.
+2. **Behavioral Guardrails & Lifecycle Hooks:** Enforces surgical edits, the "Laziness Ladder" (YAGNI & native-first design), and automated background indexing on session startup.
+
+---
+
+## 🏗️ Architecture Diagram
+
+```mermaid
+flowchart TD
+    User["👤 Developer"] -->|"Opens Workspace / Prompts"| AGY["🪐 Google Antigravity"]
+    
+    subgraph Antigravity_Core ["Google Antigravity Core"]
+        AGY -->|"Triggers SessionStart"| Hooks["🪝 Lifecycle Hooks (hooks.json)"]
+        AGY -->|"Loads Rules"| Rules["📜 Agent Rules (GEMINI.md / AGENTS.md)"]
+        AGY -->|"Discovers Tools"| MCPClient["🔌 MCP Client (mcp_config.json)"]
+    end
+
+    subgraph Auto_Automation ["Silent Background Automation"]
+        Hooks -->|"Executes on Startup"| AutoBuild["⚡ auto-graph-build.ps1"]
+        AutoBuild -->|"Initializes / Updates"| CRG_CLI["code-review-graph build / update"]
+    end
+
+    subgraph Knowledge_Graph ["Local Code Knowledge Graph"]
+        MCPClient <-->|"stdio JSON-RPC"| MCPServer["🖥️ code-review-graph serve --auto-watch"]
+        MCPServer -->|"Parses ASTs (30+ Languages)"| TreeSitter["🌳 Tree-sitter Engine"]
+        MCPServer <-->|"Reads / Writes"| SQLiteDB[("💾 SQLite Graph (.code-review-graph/graph.db)")]
+        MCPServer -->|"File Watcher Thread"| Watchdog["👀 Watchdog (Auto-sync on save)"]
+    end
+
+    SQLiteDB -->|"Blast Radius & Exact Callers"| AGY
+    AGY -->|"Fast, Accurate, Non-Destructive Code"| User
+```
+
+---
+
+## 🔍 Easy-to-Understand Component Breakdown
+
+Here is what each configured file does in simple, plain English:
+
+| File | Purpose | Why It's Needed |
+| :--- | :--- | :--- |
+| **`~/.gemini/GEMINI.md`** | **The Developer Golden Rules** | Contains the **Laziness Ladder** (prefer native/built-ins, reuse existing code) and strict rules preventing the agent from ever deleting working code or rewriting entire files. |
+| **`~/.gemini/config/AGENTS.md`** | **Quality & Code Graph Directives** | Directs Antigravity to prioritize AST graph tools (`query_graph_tool`, `get_impact_radius_tool`) over broad greps whenever exploring dependencies or planning refactors. |
+| **`~/.gemini/config/hooks.json`** | **Automatic Lifecycle Event Manager** | Hooks into Antigravity lifecycle events: fires the guardrail reminder before every turn (`PreInvocation`) and triggers silent graph indexing when starting any session (`SessionStart`). |
+| **`scripts/pre-invocation-reminder.ps1`** | **Turn-by-Turn Guardrail Injector** | An ephemeral reminder injected right before the model acts, keeping flash models disciplined (read before write, minimal edits, run tests). |
+| **`scripts/auto-graph-build.ps1`** | **Silent Background Indexer** | Detects code files in any opened project and builds or updates `.code-review-graph/graph.db` in the background without blocking the UI. |
+| **`~/.gemini/config/mcp_config.json`** | **Persistent MCP Server Registration** | Registers `code-review-graph` as a persistent stdio MCP server with `--auto-watch` so every file save updates the graph automatically. |
+| **`skills/flash-guardrails/SKILL.md`** | **Per-Project Guardrail Generator** | An on-demand Antigravity skill that inspects any new repository's language/framework and writes tailored `.agents/GEMINI.md` rules. |
+
+---
+
+## 📋 The Full Setup Prompt — Paste Into Antigravity
 
 > [!IMPORTANT]
-> Copy everything below the line and paste it as a single message in a new Antigravity conversation.
+> **To set up any fresh Antigravity installation:**  
+> Copy everything below the line and paste it as a single prompt into an Antigravity conversation.
 
 ---
 
 ### Step 0: Install Code Intelligence Engine
-Run this command in terminal first:
+Run this command in your terminal first:
 ```bash
 python -m pip install --upgrade code-review-graph
 ```
@@ -159,7 +233,7 @@ them fully and properly:
 
 ## File 2: `~/.gemini/config/AGENTS.md`
 
-Create this file at `~/.gemini/config/AGENTS.md`:
+Create (or overwrite) this file at `~/.gemini/config/AGENTS.md`:
 
 ```markdown
 # Agent Behavioral Rules — Quality Enforcement
@@ -529,3 +603,24 @@ After creating all 7 files, confirm each was created successfully by listing the
 
 > [!NOTE]
 > **For macOS/Linux**: Replace the PowerShell hook commands in `hooks.json` with bash equivalents pointing to `.sh` scripts (`pre-invocation-reminder.sh` and `auto-graph-build.sh`).
+
+---
+
+## 🎖️ Credits & Acknowledgements
+
+This enhancement ecosystem integrates and builds upon foundational work from the open-source community and Google DeepMind:
+
+* **[code-review-graph](https://github.com/tirth8205/code-review-graph) by [@tirth8205](https://github.com/tirth8205):** The persistent SQLite and Tree-sitter AST knowledge graph engine powering the blast-radius calculation, context reduction (~80x token savings), and MCP server integration.
+* **[GitNexus](https://github.com/abhigyanpatwari/GitNexus) by [@abhigyanpatwari](https://github.com/abhigyanpatwari):** Pioneering work in zero-server AST knowledge graphs and visual Graph RAG for developer agents.
+* **[Graphify](https://github.com/Graphify-Labs/graphify) by [@Graphify-Labs](https://github.com/Graphify-Labs):** Multi-modal code intelligence and repository knowledge graphing paradigms.
+* **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/):** The open standard created by Anthropic and maintained by the Linux Foundation for two-way tool and resource connectivity.
+* **[Tree-sitter](https://tree-sitter.github.io/):** The incremental parser generator powering local multi-language code analysis across 30+ programming languages.
+* **[Google DeepMind](https://deepmind.google/):** Creators of **Google Antigravity (AGY)** and the **Gemini 3.8 Flash** model series.
+* **Antigravity Customization Architecture:** Built-in skills and framework specifications (`antigravity-guide`, `agy-customizations`, `flash-guardrails`).
+
+---
+
+## 🏷️ Search & Indexing Metadata (SEO / Topics)
+
+**Repository Topics / Tags:**  
+`google-antigravity` `gemini-flash` `gemini-3.8-flash` `model-context-protocol` `mcp-server` `code-review-graph` `knowledge-graph` `tree-sitter` `ast-parser` `agent-guardrails` `ai-coding-assistant` `code-intelligence` `developer-tools` `context-optimization`
