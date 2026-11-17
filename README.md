@@ -5,7 +5,7 @@
 [![Model](https://img.shields.io/badge/Optimized%20For-Gemini%203.8%20Flash-blueviolet?logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-green?logo=json)](https://modelcontextprotocol.io)
 [![Tree-sitter](https://img.shields.io/badge/AST%20Parser-Tree--sitter-orange)](https://tree-sitter.github.io/tree-sitter/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
@@ -20,7 +20,7 @@
 3. **Multi-Turn Grep Latency:** Burning 10+ round trips scanning files just to answer *"What breaks if I change this function?"*.
 
 ### The Solution: Two-Layer Architecture
-1. **Deterministic AST Knowledge Graph (`code-review-graph`):** Runs an in-process Tree-sitter parser and indexed SQLite database. Instead of guessing who calls a function, Antigravity executes exact graph queries (`query_graph_tool`, `get_impact_radius_tool`) in single-digit milliseconds with up to **80x token reduction**.
+1. **Deterministic AST Knowledge Graph (`code-review-graph`):** Runs an in-process Tree-sitter parser and indexed SQLite database. Instead of guessing who calls a function, Antigravity executes exact graph queries (`query_graph_tool`, `get_impact_radius_tool`) in single-digit milliseconds with up to **~80x token reduction** ([benchmarked by code-review-graph](https://github.com/tirth8205/code-review-graph)).
 2. **Behavioral Guardrails & Lifecycle Hooks:** Enforces surgical edits, the "Laziness Ladder" (YAGNI & native-first design), and automated background indexing on session startup.
 
 ---
@@ -613,7 +613,7 @@ After creating all 7 files, confirm each was created successfully by listing the
 
 This enhancement ecosystem integrates and builds upon foundational work from the open-source community and Google DeepMind:
 
-* **[code-review-graph](https://github.com/tirth8205/code-review-graph) by [@tirth8205](https://github.com/tirth8205):** The persistent SQLite and Tree-sitter AST knowledge graph engine powering the blast-radius calculation, context reduction (~80x token savings), and MCP server integration.
+* **[code-review-graph](https://github.com/tirth8205/code-review-graph) by [@tirth8205](https://github.com/tirth8205):** The persistent SQLite and Tree-sitter AST knowledge graph engine powering the blast-radius calculation, context reduction ([~80x token savings per their benchmarks](https://github.com/tirth8205/code-review-graph)), and MCP server integration.
 * **[GitNexus](https://github.com/abhigyanpatwari/GitNexus) by [@abhigyanpatwari](https://github.com/abhigyanpatwari):** Pioneering work in zero-server AST knowledge graphs and visual Graph RAG for developer agents.
 * **[Graphify](https://github.com/Graphify-Labs/graphify) by [@Graphify-Labs](https://github.com/Graphify-Labs):** Multi-modal code intelligence and repository knowledge graphing paradigms.
 * **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/):** The open standard created by Anthropic and maintained by the Linux Foundation for two-way tool and resource connectivity.
